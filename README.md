@@ -19,3 +19,5 @@ npm run build    # 产出到 dist/，用于部署
 
 ## 部署
 GitHub Actions 在合并到 `main` 后自动构建并部署到 AWS（S3 + CloudFront）。
+
+test
