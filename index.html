@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>错题收集工作台</title>
+  <link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+  <header class="top">
+    <h1>错题收集工作台</h1>
+    <nav>
+      <button data-tab="list" class="tab active">错题本</button>
+      <button data-tab="review" class="tab">复习</button>
+      <button data-tab="stats" class="tab">统计</button>
+    </nav>
+    <div class="tools">
+      <button id="btn-add" class="primary">＋ 添加错题</button>
+      <button id="btn-export">导出</button>
+      <label class="btn">导入<input id="file-import" type="file" accept="application/json" hidden></label>
+    </div>
+  </header>
+
+  <main>
+    <section id="tab-list">
+      <div class="filters">
+        <input id="f-q" type="search" placeholder="搜索题目、答案、知识点">
+        <select id="f-subject"></select>
+        <select id="f-cause"></select>
+        <select id="f-status">
+          <option value="">全部状态</option>
+          <option value="open">未掌握</option>
+          <option value="mastered">已掌握</option>
+        </select>
+      </div>
+      <p id="empty" class="muted" hidden>还没有错题。点右上角“添加错题”开始。</p>
+      <ul id="cards" class="cards"></ul>
+    </section>
+
+    <section id="tab-review" hidden>
+      <div class="filters">
+        <select id="r-subject"></select>
+        <button id="r-start" class="primary">开始复习</button>
+      </div>
+      <div id="review-box" class="review"></div>
+    </section>
+
+    <section id="tab-stats" hidden>
+      <div id="stats-box"></div>
+    </section>
+  </main>
+
+  <dialog id="dlg">
+    <form id="form" method="dialog">
+      <h2 id="dlg-title">添加错题</h2>
+      <label>科目 <select name="subject" id="in-subject"></select></label>
+      <label>题目 <textarea name="question" rows="3" placeholder="输入题目，或上传图片"></textarea></label>
+      <label>题目图片 <input type="file" id="in-image" accept="image/*"></label>
+      <img id="in-preview" alt="题目预览" hidden>
+      <label>我的错误答案 <textarea name="wrongAnswer" rows="2"></textarea></label>
+      <label>正确答案 <textarea name="correctAnswer" rows="2"></textarea></label>
+      <label>解析 <textarea name="analysis" rows="3"></textarea></label>
+      <label>错因 <select name="cause" id="in-cause"></select></label>
+      <label>知识点 <input name="point" placeholder="例如：一元二次方程"></label>
+      <p id="form-err" class="err" role="alert"></p>
+      <div class="actions">
+        <button type="button" id="dlg-cancel">取消</button>
+        <button type="submit" class="primary">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
