@@ -55,7 +55,13 @@
       <h2 id="dlg-title">添加错题</h2>
       <label>科目 <select name="subject" id="in-subject"></select></label>
       <label>题目 <textarea name="question" rows="3" placeholder="输入题目，或上传图片"></textarea></label>
-      <label>题目图片 <input type="file" id="in-image" accept="image/*"></label>
+      <fieldset class="photo">
+        <legend>题目图片</legend>
+        <label class="photo-btn">📷 拍照 <input type="file" id="in-camera" accept="image/*" capture="environment" class="visually-hidden"></label>
+        <label class="photo-btn">🖼 从相册选 <input type="file" id="in-image" accept="image/*" class="visually-hidden"></label>
+        <button type="button" id="in-clear-image" hidden>去掉图片</button>
+        <p id="in-image-msg" class="muted" aria-live="polite"></p>
+      </fieldset>
       <img id="in-preview" alt="题目预览" hidden>
       <label>我的错误答案 <textarea name="wrongAnswer" rows="2"></textarea></label>
       <label>正确答案 <textarea name="correctAnswer" rows="2"></textarea></label>
