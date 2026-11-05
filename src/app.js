@@ -1,8 +1,21 @@
 import { SUBJECTS, CAUSES, createItem, filterItems, stats, reviewQueue, markReviewed, serialize, parseImport, mergeItems } from './store.js';
+import { compressImage, dataUrlBytes, isQuotaError } from './image.js';
 
 const KEY = 'mistake-workbench:items:v1';
+const FULL_MSG = '浏览器存储满了，保存失败。请先导出备份，再删掉一些带图片的错题。';
 const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; } };
-const save = (items) => localStorage.setItem(KEY, JSON.stringify(items));
+// 保存成功返回 true；存储满时返回 false，不抛错。
+const save = (items) => {
+  try { localStorage.setItem(KEY, JSON.stringify(items)); return true; } catch (err) {
+    if (isQuotaError(err)) return false;
+    throw err;
+  }
+};
+// 改动 items 后保存；失败就回滚到改动前，并提示。
+function commit(next) {
+  if (!save(next)) { alert(FULL_MSG); return false; }
+  items = next; return true;
+}
 
 let items = load();
 let reviewing = null; // {queue, idx, item}
@@ -85,7 +98,7 @@ function renderReviewCard() {
 
 function nextReview(remembered) {
   const i = items.findIndex((x) => x.id === reviewing.item.id);
-  if (i >= 0) { items[i] = markReviewed(items[i], remembered); save(items); }
+  if (i >= 0) commit(items.map((x, j) => (j === i ? markReviewed(x, remembered) : x)));
   reviewing.idx += 1;
   if (reviewing.idx >= reviewing.queue.length) { reviewing = null; renderReviewIdle(); renderList(); renderStats(); return; }
   reviewing.item = reviewing.queue[reviewing.idx];
@@ -117,35 +130,61 @@ $('#cards').addEventListener('click', (e) => {
   if (!li) return;
   const id = li.dataset.id;
   const act = e.target.dataset.act;
+  let next;
   if (act === 'delete') {
     if (!confirm('删除这道错题？不可恢复。')) return;
-    items = items.filter((x) => x.id !== id);
+    next = items.filter((x) => x.id !== id);
   } else if (act === 'toggle') {
-    items = items.map((x) => (x.id === id ? { ...x, mastered: !x.mastered } : x));
+    next = items.map((x) => (x.id === id ? { ...x, mastered: !x.mastered } : x));
   } else return;
-  save(items); renderList(); renderStats();
+  commit(next); renderList(); renderStats();
 });
 
 // add dialog
 const dlg = $('#dlg'); const form = $('#form');
 let pendingImage = '';
+let imageBusy = false;
+function setImage(dataUrl, msg = '') {
+  pendingImage = dataUrl;
+  $('#in-preview').src = dataUrl || '';
+  $('#in-preview').hidden = !dataUrl;
+  $('#in-clear-image').hidden = !dataUrl;
+  $('#in-image-msg').textContent = msg;
+}
 $('#btn-add').addEventListener('click', () => {
-  form.reset(); pendingImage = ''; $('#in-preview').hidden = true; $('#form-err').textContent = '';
+  form.reset(); setImage(''); $('#form-err').textContent = '';
   $('#dlg-title').textContent = '添加错题';
   dlg.showModal();
 });
 $('#dlg-cancel').addEventListener('click', () => dlg.close());
-$('#in-image').addEventListener('change', async () => {
-  const f = $('#in-image').files[0];
+async function onPick(input) {
+  const f = input.files[0];
+  input.value = ''; // 允许连续选同一张
   if (!f) return;
-  pendingImage = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(f); });
-  $('#in-preview').src = pendingImage; $('#in-preview').hidden = false;
-});
+  imageBusy = true;
+  $('#in-image-msg').textContent = '正在压缩图片…';
+  try {
+    const url = await compressImage(f);
+    const kb = Math.round(dataUrlBytes(url) / 1024);
+    setImage(url, `已压缩：${Math.round(f.size / 1024)} KB → ${kb} KB`);
+  } catch (err) {
+    setImage('', '图片读取失败：' + err.message);
+  } finally { imageBusy = false; }
+}
+$('#in-camera').addEventListener('change', (e) => onPick(e.target));
+$('#in-image').addEventListener('change', (e) => onPick(e.target));
+$('#in-clear-image').addEventListener('click', () => setImage(''));
 form.addEventListener('submit', (e) => {
+  if (imageBusy) { e.preventDefault(); $('#form-err').textContent = '图片还在压缩，请稍等。'; return; }
   const fd = new FormData(form);
   try {
     const it = createItem({ ...Object.fromEntries(fd), image: pendingImage });
-    items = [it, ...items]; save(items); renderList(); renderStats();
+    if (!save([it, ...items])) {
+      e.preventDefault(); // 不关对话框，内容不丢
+      $('#form-err').textContent = FULL_MSG;
+      return;
+    }
+    items = [it, ...items]; renderList(); renderStats();
   } catch (err) {
     e.preventDefault();
     $('#form-err').textContent = err.message;
@@ -166,8 +205,10 @@ $('#file-import').addEventListener('change', async () => {
   if (!f) return;
   try {
     const incoming = parseImport(await f.text());
-    items = mergeItems(items, incoming); save(items); renderList(); renderStats();
-    alert(`导入了 ${incoming.length} 条错题。`);
+    if (commit(mergeItems(items, incoming))) {
+      renderList(); renderStats();
+      alert(`导入了 ${incoming.length} 条错题。`);
+    }
   } catch (err) { alert('导入失败：' + err.message); }
   $('#file-import').value = '';
 });

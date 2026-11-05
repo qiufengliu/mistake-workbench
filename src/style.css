@@ -54,3 +54,13 @@ dialog h2 { margin: 0; font-size: 17px; }
 .actions { display: flex; justify-content: flex-end; gap: 8px; }
 .err { color: var(--bad); min-height: 1.4em; margin: 0; }
 @media print { .top, .filters, .card-actions { display: none; } body { background: #fff; color: #000; } }
+
+
+/* 拍照 / 相册 按钮 */
+fieldset.photo { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0; }
+fieldset.photo legend { font-size: 14px; padding: 0 4px; }
+dialog label.photo-btn { display: inline-block; padding: 6px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); cursor: pointer; }
+label.photo-btn:hover { border-color: var(--brand); }
+label.photo-btn:focus-within { outline: 2px solid var(--brand); outline-offset: 2px; }
+fieldset.photo p { flex-basis: 100%; margin: 0; font-size: 13px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
